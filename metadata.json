@@ -1,0 +1,7 @@
+{
+  "name": "Logo Franz",
+  "description": "A professional AI-powered logo creation platform using a proprietary 5-step methodology to guide entrepreneurs from concept to final delivery.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
