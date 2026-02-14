@@ -1,4 +1,6 @@
 
+import { LogoProject } from "../types";
+
 /**
  * Para utilizar este serviço, você deve:
  * 1. Criar uma Planilha no Google Sheets.
@@ -11,26 +13,22 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/SUA_URL_AQUI/exec";
 
 export const sheetService = {
-  async saveData(action: 'register' | 'login' | 'saveProject', payload: any) {
-    // Por ser um exemplo didático e o Apps Script ter restrições de CORS em alguns contextos,
-    // simularemos a resposta de sucesso enquanto a URL não for fornecida.
+  async saveData(action: 'register' | 'login' | 'saveProject' | 'updateProfile', payload: any) {
     if (SCRIPT_URL.includes("SUA_URL_AQUI")) {
       console.warn("Google Sheets SCRIPT_URL não configurado. Simulando resposta...");
       return { success: true, data: payload };
     }
 
     try {
-      const response = await fetch(SCRIPT_URL, {
+      await fetch(SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors", // Necessário para evitar bloqueios de CORS simples do Google Apps Script
+        mode: "no-cors",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ action, ...payload }),
       });
       
-      // Com no-cors, não conseguimos ler o corpo da resposta.
-      // Em uma implementação real, recomenda-se usar um servidor proxy ou configurar o Apps Script adequadamente.
       return { success: true };
     } catch (error) {
       console.error("Erro na comunicação com Sheets:", error);
@@ -38,7 +36,6 @@ export const sheetService = {
     }
   },
 
-  // Armazenamento Local de Fallback (para que o app funcione imediatamente)
   getUsers(): any[] {
     const data = localStorage.getItem('franz_users');
     return data ? JSON.parse(data) : [];
@@ -48,5 +45,36 @@ export const sheetService = {
     const users = this.getUsers();
     users.push(user);
     localStorage.setItem('franz_users', JSON.stringify(users));
+  },
+
+  updateUserLocal(updatedUser: any) {
+    const users = this.getUsers();
+    const index = users.findIndex(u => u.id === updatedUser.id);
+    if (index !== -1) {
+      users[index] = { ...users[index], ...updatedUser };
+      localStorage.setItem('franz_users', JSON.stringify(users));
+    }
+    localStorage.setItem('franz_session', JSON.stringify(updatedUser));
+  },
+
+  saveProjectLocal(project: LogoProject) {
+    const data = localStorage.getItem('franz_projects');
+    const projects: LogoProject[] = data ? JSON.parse(data) : [];
+    const index = projects.findIndex(p => p.id === project.id);
+    
+    if (index !== -1) {
+      projects[index] = project;
+    } else {
+      projects.push(project);
+    }
+    
+    localStorage.setItem('franz_projects', JSON.stringify(projects));
+  },
+
+  getProjectsLocal(userId: string): LogoProject[] {
+    const data = localStorage.getItem('franz_projects');
+    if (!data) return [];
+    const projects: LogoProject[] = JSON.parse(data);
+    return projects.filter(p => p.userId === userId);
   }
 };

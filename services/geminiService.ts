@@ -6,12 +6,18 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const geminiService = {
   async suggestBranding(identity: BrandIdentity, visualStyle: VisualStyle): Promise<BrandingKit> {
+    const colorContext = `
+      ${identity.colorPreferences ? `User preferences: ${identity.colorPreferences}. Try to incorporate these colors.` : ''}
+      ${identity.excludedColors ? `CRITICAL: Do NOT use these colors: ${identity.excludedColors}.` : ''}
+    `;
+
     const prompt = `Based on the following brand identity and visual style, suggest 3 distinct professional color palettes (each with 4 hex codes) and 2 recommended fonts (one for the logo/headings and one for secondary text).
     Brand: ${identity.name} (${identity.slogan})
     Segment: ${identity.segment}
     Target: ${identity.target}
     Personality: ${identity.personality}
     Style Preference: ${visualStyle.style}, ${visualStyle.preference}
+    ${colorContext}
     
     Return the response in valid JSON format with "palettes" (array of arrays of strings) and "typography".`;
 
@@ -103,5 +109,30 @@ export const geminiService = {
       }
     }
     throw new Error("Logo generation failed");
+  },
+
+  async generateSvgCode(identity: BrandIdentity, logoPrompt: string, kit: BrandingKit): Promise<string> {
+    const prompt = `Act as a senior graphic designer and frontend engineer. Generate the clean, professional SVG code for a high-resolution version of this logo concept.
+    Concept: ${logoPrompt}
+    Brand Name: ${identity.name}
+    Brand Colors: ${kit.colors.join(', ')}
+    
+    Requirements:
+    1. The SVG must be modern, minimalist, and professional.
+    2. Use standard SVG tags (path, circle, rect, text).
+    3. Include the brand name "${identity.name}" in a sophisticated layout.
+    4. Ensure the colors match the brand palette provided.
+    5. The output must ONLY be the raw SVG code starting with <svg and ending with </svg>. No markdown, no comments.
+    6. Make it scalable (viewBox="0 0 500 500").
+    7. Center all elements.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+    });
+
+    const text = response.text || '';
+    const svgMatch = text.match(/<svg[\s\S]*<\/svg>/);
+    return svgMatch ? svgMatch[0] : '';
   }
 };

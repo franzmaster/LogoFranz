@@ -12,6 +12,8 @@ export interface BrandIdentity {
   segment: string;
   target: string;
   personality: string;
+  colorPreferences?: string;
+  excludedColors?: string;
 }
 
 export type VisualStyleType = 'minimalist' | 'technological' | 'classic' | 'modern' | 'premium';
@@ -54,4 +56,5 @@ export enum AppState {
   LANDING = 'LANDING',
   DASHBOARD = 'DASHBOARD',
   WIZARD = 'WIZARD',
+  PROFILE = 'PROFILE',
 }
